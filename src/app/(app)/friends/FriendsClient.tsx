@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import UserListItem from '../../components/UserListItem';
 
 // Define types
 type FriendshipWithProfiles = {
@@ -23,6 +24,7 @@ export default function FriendsClient({ serverFriendships }: { serverFriendships
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [friendships, setFriendships] = useState(serverFriendships);
     
+    // --- THE FIX: Restoring the missing state variables ---
     const [query, setQuery] = useState('');
     const [searchResults, setSearchResults] = useState<ProfileSearchResult[]>([]);
     const [loadingSearch, setLoadingSearch] = useState(false);
@@ -84,25 +86,29 @@ export default function FriendsClient({ serverFriendships }: { serverFriendships
         }
     };
 
-    const handleFriendshipAction = async (friendshipId: number, newStatus: 'accepted' | 'blocked' | 'deleted') => {
-        if (newStatus === 'deleted') {
-            if (!confirm('Are you sure you want to unfriend this user?')) return;
-            const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
-            if (!error) {
-                setFriendships(friendships.filter(f => f.id !== friendshipId));
-            }
-        } else {
-            const { error } = await supabase.from('friendships').update({ status: newStatus }).eq('id', friendshipId);
-            if (!error) {
-                setFriendships(friendships.map(f => f.id === friendshipId ? { ...f, status: newStatus } : f));
-            }
+    const handleAcceptRequest = async (friendshipId: number) => {
+        const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId);
+        if (!error) {
+            setFriendships(friendships.map(f => f.id === friendshipId ? { ...f, status: 'accepted' } : f));
+        }
+    };
+
+    const handleDeclineRequest = async (friendshipId: number) => {
+        const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
+        if (!error) {
+            setFriendships(friendships.filter(f => f.id !== friendshipId));
+        }
+    };
+
+    const handleUnfriend = async (friendshipId: number, username: string) => {
+        if (confirm(`Are you sure you want to unfriend ${username}?`)) {
+            await handleDeclineRequest(friendshipId); // Re-use the same delete logic
         }
     };
 
     const handleSendRequest = async (addresseeId: string) => {
         if (!currentUser) return;
-
-        // Disable the button immediately to prevent multiple clicks
+        
         const tempFriendship = {
             id: Date.now(),
             status: 'pending' as const,
@@ -118,17 +124,13 @@ export default function FriendsClient({ serverFriendships }: { serverFriendships
         });
         
         if (error) {
-            // The UNIQUE constraint we added will cause an error if a request already exists.
-            // We can just inform the user.
-            if (error.code === '23505') { // 23505 is the code for a unique violation
+            if (error.code === '23505') {
                 alert("You already have a pending request with this user.");
             } else {
                 alert("Error sending request. Please try again.");
             }
-            // Revert the optimistic UI update on error
             setFriendships(friendships.filter(f => f.id !== tempFriendship.id));
         } else {
-            // Refresh the page data in the background to get the real object
             router.refresh();
         }
     };
@@ -146,7 +148,6 @@ export default function FriendsClient({ serverFriendships }: { serverFriendships
 
     return (
         <div style={{ marginTop: '20px' }}>
-            {/* --- Search Section --- */}
             <section>
                 <h2>Find New Friends</h2>
                 <form onSubmit={handleSearch}>
@@ -167,58 +168,42 @@ export default function FriendsClient({ serverFriendships }: { serverFriendships
                         {searchResults.map((profile) => {
                             const status = getFriendshipStatus(profile.id);
                             return (
-                                <li key={profile.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', border: '1px solid #eee', marginBottom: '10px', borderRadius: '5px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                        <img src={profile.avatar_url || 'https://placehold.co/50x50/eee/ccc?text=??'} alt="avatar" style={{ width: '50px', height: '50px', borderRadius: '50%' }} />
-                                        <span>{profile.username}</span>
-                                    </div>
+                                <UserListItem key={profile.id} user={profile}>
                                     <button onClick={() => handleSendRequest(profile.id)} disabled={status !== 'not_friends'}>
                                         {status === 'friends' && 'Friends'}
                                         {status === 'pending_sent' && 'Request Sent'}
                                         {status === 'pending_received' && 'Accept Request'}
                                         {status === 'not_friends' && 'Add Friend'}
                                     </button>
-                                </li>
+                                </UserListItem>
                             );
                         })}
                     </ul>
                 </div>
             </section>
 
-            {/* --- Friend Requests Section --- */}
             <section style={{ marginTop: '40px' }}>
                 <h3>Friend Requests</h3>
                 {friendRequests.length > 0 ? (
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                         {friendRequests.map(req => (
-                            <li key={req.friendship_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', border: '1px solid #eee', marginBottom: '10px', borderRadius: '5px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    <img src={req.avatar_url || 'https://placehold.co/50x50/eee/ccc?text=??'} alt="avatar" style={{ width: '50px', height: '50px', borderRadius: '50%' }} />
-                                    <span>{req.username}</span>
-                                </div>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <button onClick={() => handleFriendshipAction(req.friendship_id, 'accepted')}>Accept</button>
-                                    <button onClick={() => handleFriendshipAction(req.friendship_id, 'blocked')}>Decline</button>
-                                </div>
-                            </li>
+                            <UserListItem key={req.friendship_id} user={req}>
+                                <button onClick={() => handleAcceptRequest(req.friendship_id)}>Accept</button>
+                                <button onClick={() => handleDeclineRequest(req.friendship_id)} style={{ backgroundColor: '#666', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '5px', cursor: 'pointer' }}>Decline</button>
+                            </UserListItem>
                         ))}
                     </ul>
                 ) : <p>No new friend requests.</p>}
             </section>
 
-            {/* --- Friend List Section --- */}
             <section style={{ marginTop: '40px' }}>
                 <h3>Your Friends</h3>
                 {acceptedFriends.length > 0 ? (
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                         {acceptedFriends.map(friend => (
-                            <li key={friend.friendship_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', border: '1px solid #eee', marginBottom: '10px', borderRadius: '5px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    <img src={friend.avatar_url || 'https://placehold.co/50x50/eee/ccc?text=??'} alt="avatar" style={{ width: '50px', height: '50px', borderRadius: '50%' }} />
-                                    <span>{friend.username}</span>
-                                </div>
-                                <button onClick={() => handleFriendshipAction(friend.friendship_id, 'deleted')} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '5px', cursor: 'pointer' }}>Unfriend</button>
-                            </li>
+                            <UserListItem key={friend.friendship_id} user={friend}>
+                                <button onClick={() => handleUnfriend(friend.friendship_id, friend.username)} style={{ backgroundColor: '#ff4d4d', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '5px', cursor: 'pointer' }}>Unfriend</button>
+                            </UserListItem>
                         ))}
                     </ul>
                 ) : <p>You haven't added any friends yet.</p>}

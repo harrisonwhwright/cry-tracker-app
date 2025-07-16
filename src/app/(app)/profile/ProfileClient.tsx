@@ -5,15 +5,16 @@ import EditProfileForm from './EditProfileForm';
 import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import ClientFormattedDate from '../../components/ClientFormattedDate';
-import PostOptionsMenu from '../../components/PostOptionsMenu'; // Import the new component
+import PostCard from '../../components/PostCard';
 
 type Post = {
     id: number;
-    user_id: string; // Make sure user_id is in the type
+    user_id: string;
     content: string;
     is_public: boolean;
     created_at: string;
     image_url: string | null;
+    hugs: { count: number }[];
 };
 
 type Profile = {
@@ -25,7 +26,7 @@ type Profile = {
     created_at: string;
 };
 
-export default function ProfileClient({ profile, posts }: { profile: Profile, posts: Post[] }) {
+export default function ProfileClient({ profile, posts, userHuggedPostIds }: { profile: Profile, posts: Post[], userHuggedPostIds: Set<number> }) {
     const [isEditing, setIsEditing] = useState(false);
     const [postImageFile, setPostImageFile] = useState<File | null>(null);
     const [isPosting, setIsPosting] = useState(false);
@@ -103,13 +104,9 @@ export default function ProfileClient({ profile, posts }: { profile: Profile, po
         setIsPosting(false);
     };
 
-    // The old handleDeletePost function is no longer needed here.
-
     return (
         <div style={{ maxWidth: '600px', margin: 'auto' }}>
             <h1>Profile</h1>
-            {/* ... (Profile info and edit form JSX remains the same) ... */}
-
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '20px 0' }}>
                 <img
                     src={profile.avatar_url || 'https://placehold.co/100x100/eee/ccc?text=Avatar'}
@@ -168,29 +165,12 @@ export default function ProfileClient({ profile, posts }: { profile: Profile, po
                 </form>
             </div>
 
-
             <div>
                 <h2>Your Posts</h2>
                 {posts && posts.length > 0 ? (
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                         {posts.map((post) => (
-                            <li key={post.id} style={{ border: '1px solid #eee', padding: '15px', marginBottom: '10px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <p style={{ margin: 0, flex: 1 }}>{post.content}</p>
-                                    {/* Replace the old button with the new component */}
-                                    <PostOptionsMenu post={post} />
-                                </div>
-                                {post.image_url && (
-                                    <img
-                                        src={post.image_url}
-                                        alt="Post image"
-                                        style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '10px' }}
-                                    />
-                                )}
-                                <small style={{ color: '#666', display: 'block', marginTop: '10px' }}>
-                                    {isClient ? new Date(post.created_at).toLocaleString() : ''} - {post.is_public ? 'Public' : 'Private'}
-                                </small>
-                            </li>
+                           <PostCard key={post.id} post={post} userHuggedPostIds={userHuggedPostIds} />
                         ))}
                     </ul>
                 ) : (

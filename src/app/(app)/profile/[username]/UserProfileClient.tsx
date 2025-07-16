@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 import PostCard from '../../../components/PostCard';
@@ -10,7 +10,7 @@ import ClientFormattedDate from '../../../components/ClientFormattedDate';
 export default function UserProfileClient({ profile, initialFriendship, posts, userHuggedPostIds }: any) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [friendship, setFriendship] = useState(initialFriendship);
-    const supabase = createPagesBrowserClient();
+    const supabase = createClientComponentClient();
     const router = useRouter();
 
     useEffect(() => {
@@ -21,7 +21,6 @@ export default function UserProfileClient({ profile, initialFriendship, posts, u
         fetchUser();
     }, []);
 
-    // --- UPDATED LOGIC ---
     const handleAcceptRequest = async () => {
         if (!friendship) return;
         const { error } = await supabase
@@ -47,7 +46,7 @@ export default function UserProfileClient({ profile, initialFriendship, posts, u
         if (error) {
             alert("Error declining request.");
         } else {
-            setFriendship(null); // The friendship row is gone
+            setFriendship(null);
             router.refresh();
         }
     };

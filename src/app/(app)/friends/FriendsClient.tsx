@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import UserListItem from '../../components/UserListItem';
@@ -24,13 +24,12 @@ export default function FriendsClient({ serverFriendships }: { serverFriendships
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [friendships, setFriendships] = useState(serverFriendships);
     
-    // --- THE FIX: Restoring the missing state variables ---
     const [query, setQuery] = useState('');
     const [searchResults, setSearchResults] = useState<ProfileSearchResult[]>([]);
     const [loadingSearch, setLoadingSearch] = useState(false);
     const [searchMessage, setSearchMessage] = useState('');
 
-    const supabase = createPagesBrowserClient();
+    const supabase = createClientComponentClient();
     const router = useRouter();
 
     useEffect(() => {
@@ -102,7 +101,7 @@ export default function FriendsClient({ serverFriendships }: { serverFriendships
 
     const handleUnfriend = async (friendshipId: number, username: string) => {
         if (confirm(`Are you sure you want to unfriend ${username}?`)) {
-            await handleDeclineRequest(friendshipId); // Re-use the same delete logic
+            await handleDeclineRequest(friendshipId);
         }
     };
 

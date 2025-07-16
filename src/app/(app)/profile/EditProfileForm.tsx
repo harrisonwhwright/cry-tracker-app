@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 
 type Profile = {
@@ -20,7 +20,7 @@ export default function EditProfileForm({ profile }: { profile: Profile }) {
     const [uploading, setUploading] = useState(false);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
-    const supabase = createPagesBrowserClient();
+    const supabase = createClientComponentClient();
     const router = useRouter();
 
     useEffect(() => {
@@ -57,12 +57,10 @@ export default function EditProfileForm({ profile }: { profile: Profile }) {
                 setUploading(false);
                 return;
             }
-
-            // --- THE FIX: Use createSignedUrl for private buckets ---
-            // We generate a URL that is valid for a very long time (10 years).
+            
             const { data: signedUrlData, error: signedUrlError } = await supabase.storage
                 .from('avatars')
-                .createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10); // 10 years in seconds
+                .createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10);
 
             if (signedUrlError) {
                 setMessage(`Error creating signed URL: ${signedUrlError.message}`);

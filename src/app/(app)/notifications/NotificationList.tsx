@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 
 // Define the type for a single notification object
@@ -19,28 +19,23 @@ type Notification = {
 
 export default function NotificationList({ initialNotifications }: { initialNotifications: Notification[] }) {
     const [notifications, setNotifications] = useState(initialNotifications);
-    const supabase = createPagesBrowserClient();
+    const supabase = createClientComponentClient();
     const router = useRouter();
-
-    // This state ensures date formatting only happens on the client
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
     }, []);
 
-
-    // This effect runs once when the component mounts to mark notifications as read
     useEffect(() => {
         const markAsRead = async () => {
-            const unreadIds = initialNotifications.filter(n => !n.is_read).map(n => n.id);
+            const unreadIds = initialNotifications.filter((n: any) => !n.is_read).map((n: any) => n.id);
             if (unreadIds.length > 0) {
                 await supabase
                     .from('notifications')
                     .update({ is_read: true })
                     .in('id', unreadIds);
                 
-                // Refresh the server components (like the layout) to update the count
                 router.refresh();
             }
         };
@@ -48,6 +43,7 @@ export default function NotificationList({ initialNotifications }: { initialNoti
         markAsRead();
     }, [initialNotifications, supabase, router]);
 
+    // This function generates the notification message based on its type.
     const getNotificationMessage = (notification: Notification) => {
         const actorUsername = <strong>{notification.actor.username}</strong>;
         switch (notification.type) {
@@ -56,7 +52,7 @@ export default function NotificationList({ initialNotifications }: { initialNoti
             case 'accepted_friend_request':
                 return <>{actorUsername} accepted your friend request.</>;
             case 'new_friend_request':
-                 return <>{actorUsername} sent you a friend request.</>;
+                return <>{actorUsername} sent you a friend request.</>;
             default:
                 return 'You have a new notification.';
         }
@@ -73,6 +69,7 @@ export default function NotificationList({ initialNotifications }: { initialNoti
                                 padding: '15px',
                                 border: '1px solid #eee',
                                 marginBottom: '10px',
+                                borderRadius: '5px',
                                 opacity: notification.is_read ? 0.6 : 1,
                             }}
                         >
@@ -85,7 +82,6 @@ export default function NotificationList({ initialNotifications }: { initialNoti
                                 <div>
                                     <p style={{ margin: 0 }}>{getNotificationMessage(notification)}</p>
                                     <small style={{ color: '#666' }}>
-                                        {/* THE FIX: Only render the formatted date on the client */}
                                         {isClient ? new Date(notification.created_at).toLocaleString() : ''}
                                     </small>
                                 </div>

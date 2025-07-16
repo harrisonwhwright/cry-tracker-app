@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import EditProfileForm from './EditProfileForm';
-import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import ClientFormattedDate from '../../components/ClientFormattedDate';
 import PostCard from '../../components/PostCard';
@@ -31,7 +31,7 @@ export default function ProfileClient({ profile, posts, userHuggedPostIds }: { p
     const [postImageFile, setPostImageFile] = useState<File | null>(null);
     const [isPosting, setIsPosting] = useState(false);
     const router = useRouter();
-    const supabase = createPagesBrowserClient();
+    const supabase = createClientComponentClient();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {

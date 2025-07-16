@@ -6,7 +6,6 @@ import ProfileClient from './ProfileClient';
 export default async function ProfilePage() {
     const supabase = createServerComponentClient({ cookies });
 
-    // --- THE FIX: Use getUser() instead of getSession() on the server ---
     const {
         data: { user },
     } = await supabase.auth.getUser();
@@ -15,19 +14,33 @@ export default async function ProfilePage() {
         redirect('/login');
     }
 
-    // Fetch the user's profile data
     const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-    // Fetch the user's posts
     const { data: posts } = await supabase
         .from('posts')
-        .select('*')
+        .select('*, hugs(count)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+    
+    const { data: userHugs } = await supabase
+        .from('hugs')
+        .select('post_id')
+        .eq('user_id', user.id);
 
-    return <ProfileClient profile={profile} posts={posts || []} />;
+    const userHuggedPostIds = new Set(userHugs?.map(hug => hug.post_id) || []);
+
+    // We pass the user's own profile info to be used by the PostCard
+    const postsWithProfile = posts?.map(post => ({
+        ...post,
+        profiles: {
+            username: profile.username,
+            avatar_url: profile.avatar_url
+        }
+    }));
+
+    return <ProfileClient profile={profile} posts={postsWithProfile || []} userHuggedPostIds={userHuggedPostIds} />;
 }

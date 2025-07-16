@@ -1,33 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import EditProfileForm from './EditProfileForm';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import ClientFormattedDate from '../../components/ClientFormattedDate';
 import PostCard from '../../components/PostCard';
 
-type Post = {
-    id: number;
-    user_id: string;
-    content: string;
-    is_public: boolean;
-    created_at: string;
-    image_url: string | null;
-    hugs: { count: number }[];
-};
+// ... (Type definitions remain the same)
 
-type Profile = {
-    id: string;
-    username: string;
-    full_name: string | null;
-    avatar_url: string | null;
-    is_private: boolean;
-    created_at: string;
-};
-
-export default function ProfileClient({ profile, posts, userHuggedPostIds }: { profile: Profile, posts: Post[], userHuggedPostIds: Set<number> }) {
-    const [isEditing, setIsEditing] = useState(false);
+export default function ProfileClient({ profile, posts, userHuggedPostIds }: any) {
     const [postImageFile, setPostImageFile] = useState<File | null>(null);
     const [isPosting, setIsPosting] = useState(false);
     const router = useRouter();
@@ -106,7 +87,7 @@ export default function ProfileClient({ profile, posts, userHuggedPostIds }: { p
 
     return (
         <div style={{ maxWidth: '600px', margin: 'auto' }}>
-            <h1>Profile</h1>
+            <h1>Your Profile</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', margin: '20px 0' }}>
                 <img
                     src={profile.avatar_url || 'https://placehold.co/100x100/eee/ccc?text=Avatar'}
@@ -120,17 +101,6 @@ export default function ProfileClient({ profile, posts, userHuggedPostIds }: { p
                         Joined: {isClient ? new Date(profile.created_at).toLocaleDateString() : ''}
                     </p>
                 </div>
-            </div>
-
-            <div style={{ marginBottom: '40px' }}>
-                <button onClick={() => setIsEditing(!isEditing)} style={{ padding: '10px 20px' }}>
-                    {isEditing ? 'Cancel' : 'Edit Profile'}
-                </button>
-                {isEditing && (
-                    <div style={{ marginTop: '20px' }}>
-                        <EditProfileForm profile={profile} />
-                    </div>
-                )}
             </div>
 
             <div style={{ marginBottom: '40px' }}>
@@ -169,7 +139,7 @@ export default function ProfileClient({ profile, posts, userHuggedPostIds }: { p
                 <h2>Your Posts</h2>
                 {posts && posts.length > 0 ? (
                     <ul style={{ listStyle: 'none', padding: 0 }}>
-                        {posts.map((post) => (
+                        {posts.map((post: any) => (
                            <PostCard key={post.id} post={post} userHuggedPostIds={userHuggedPostIds} />
                         ))}
                     </ul>

@@ -94,22 +94,24 @@ export default function EditProfileForm({ profile }: { profile: Profile }) {
     };
 
     return (
-        <form onSubmit={handleUpdateProfile} style={{ border: '1px solid #ddd', padding: '20px' }}>
+        <form onSubmit={handleUpdateProfile} style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '8px' }}>
             <div>
                 <label htmlFor="avatar">Avatar</label>
-                <input
-                    type="file"
-                    id="avatar"
-                    accept="image/png, image/jpeg, image/webp"
-                    onChange={(e) => {
-                        if (e.target.files && e.target.files.length > 0) {
-                            setAvatarFile(e.target.files[0]);
-                        }
-                    }}
-                    style={{ display: 'block', margin: '10px 0' }}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', margin: '10px 0' }}>
+                    <img src={profile.avatar_url || 'https://placehold.co/60x60/eee/ccc?text=??'} alt="Current avatar" style={{ width: '60px', height: '60px', borderRadius: '50%' }} />
+                    <input
+                        type="file"
+                        id="avatar"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                                setAvatarFile(e.target.files[0]);
+                            }
+                        }}
+                    />
+                </div>
             </div>
-            <div>
+            <div style={{ marginTop: '15px' }}>
                 <label htmlFor="username">Username</label>
                 <input
                     type="text"

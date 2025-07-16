@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import LogoutButton from './LogoutButton';
 
-// Updated navigation links (Search removed)
+// Updated navigation links
 const navLinks = [
     { href: '/home', name: 'Home' },
     { href: '/profile', name: 'Profile' },
     { href: '/friends', name: 'Friends' },
     { href: '/notifications', name: 'Notifications' },
+    { href: '/settings', name: 'Settings' }, // New Link
 ];
 
 export default function NavBar({ unreadCount }: { unreadCount: number }) {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 // Define the type for a single notification object
 type Notification = {
@@ -43,7 +44,6 @@ export default function NotificationList({ initialNotifications }: { initialNoti
         markAsRead();
     }, [initialNotifications, supabase, router]);
 
-    // This function generates the notification message based on its type.
     const getNotificationMessage = (notification: Notification) => {
         const actorUsername = <strong>{notification.actor.username}</strong>;
         switch (notification.type) {
@@ -58,21 +58,27 @@ export default function NotificationList({ initialNotifications }: { initialNoti
         }
     };
 
+    // Helper function to determine the link for a notification
+    const getNotificationLink = (notification: Notification): string | null => {
+        switch (notification.type) {
+            // THE FIX: Both friend-related notifications now link to the actor's profile.
+            case 'new_friend_request':
+            case 'accepted_friend_request':
+                return `/profile/${notification.actor.username}`;
+            case 'new_hug':
+            default:
+                return null; // No link for hugs or other types
+        }
+    };
+
     return (
         <div style={{ marginTop: '20px' }}>
             {notifications.length > 0 ? (
                 <ul style={{ listStyle: 'none', padding: 0 }}>
-                    {notifications.map((notification) => (
-                        <li
-                            key={notification.id}
-                            style={{
-                                padding: '15px',
-                                border: '1px solid #eee',
-                                marginBottom: '10px',
-                                borderRadius: '5px',
-                                opacity: notification.is_read ? 0.6 : 1,
-                            }}
-                        >
+                    {notifications.map((notification) => {
+                        const href = getNotificationLink(notification);
+
+                        const content = (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                 <img
                                     src={notification.actor.avatar_url || 'https://placehold.co/40x40/eee/ccc?text=??'}
@@ -86,8 +92,30 @@ export default function NotificationList({ initialNotifications }: { initialNoti
                                     </small>
                                 </div>
                             </div>
-                        </li>
-                    ))}
+                        );
+
+                        return (
+                            <li
+                                key={notification.id}
+                                style={{
+                                    padding: '15px',
+                                    border: '1px solid #eee',
+                                    marginBottom: '10px',
+                                    borderRadius: '5px',
+                                    opacity: notification.is_read ? 0.6 : 1,
+                                    cursor: href ? 'pointer' : 'default',
+                                }}
+                            >
+                                {href ? (
+                                    <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                        {content}
+                                    </Link>
+                                ) : (
+                                    content
+                                )}
+                            </li>
+                        );
+                    })}
                 </ul>
             ) : (
                 <p>You have no notifications.</p>
